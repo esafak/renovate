@@ -4898,6 +4898,9 @@ Once the above conditions are met, and you got one or more vulnerability alerts 
 
 You may use the `vulnerabilityAlerts` configuration object to customize vulnerability-fix PRs.
 
+By default, vulnerability updates still respect normal package grouping from `packageRules`.
+Setting `vulnerabilityAlerts.groupName` groups vulnerability fixes into a dedicated security group.
+
 ```json title="Setting a custom label and assignee"
 {
   "vulnerabilityAlerts": {
@@ -4907,6 +4910,19 @@ You may use the `vulnerabilityAlerts` configuration object to customize vulnerab
   }
 }
 ```
+
+To expand a vulnerability group with package-group peers of vulnerable dependencies, enable `expandPackageGroups`:
+
+```json title="Expanding vulnerability groups with package groups"
+{
+  "vulnerabilityAlerts": {
+    "groupName": "security",
+    "expandPackageGroups": true
+  }
+}
+```
+
+When enabled, Renovate can produce larger security PRs because it includes updates from related package groups in the same branch.
 
 <!-- prettier-ignore -->
 !!! warning

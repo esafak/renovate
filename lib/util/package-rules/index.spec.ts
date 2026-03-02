@@ -199,6 +199,25 @@ describe('util/package-rules/index', () => {
     expect(res.skipStage).toBeUndefined();
   });
 
+  it('tracks original package group when vulnerability rule overrides group', async () => {
+    const dep: any = {
+      depName: 'foo',
+      groupName: 'package-group',
+      packageRules: [
+        {
+          isVulnerabilityAlert: true,
+          force: {
+            groupName: 'security',
+          },
+        },
+      ],
+    };
+
+    const res = await applyPackageRules(dep);
+    expect(res.groupName).toBe('security');
+    expect(res.vulnerabilityPackageGroupName).toBe('package-group');
+  });
+
   it('skips skipReason=package-rules if enabled=true', async () => {
     const dep: any = {
       enabled: false,

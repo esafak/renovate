@@ -111,6 +111,7 @@ export interface RenovateSharedConfig {
   manager?: string;
   milestone?: number;
   minimumReleaseAge?: Nullish<string>;
+  expandPackageGroups?: boolean;
   npmrc?: string;
   npmrcMerge?: boolean;
   npmToken?: string;
@@ -347,6 +348,7 @@ export interface RenovateInternalConfig {
   remediations?: unknown;
   /** What is this used for? */
   vulnerabilityAlertsOnly?: boolean;
+  vulnerabilityPackageGroupName?: string;
 }
 
 // TODO: Proper typings

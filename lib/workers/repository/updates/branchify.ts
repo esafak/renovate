@@ -17,12 +17,95 @@ export type BranchifiedConfig = Merge<
     branchList: string[];
   }
 >;
+
+function getUpgradeStableKey(upgrade: BranchUpgradeConfig): string {
+  const packageFile = upgrade.packageFile ?? '';
+  const depName = upgrade.depName ?? '';
+  const currentValue = upgrade.currentValue ?? '';
+  const newValue = upgrade.newValue ?? '';
+  const updateType = upgrade.updateType ?? '';
+  return `${packageFile}:${depName}:${currentValue}:${newValue}:${updateType}`;
+}
+
+function expandVulnerabilityPackageGroups(
+  updates: BranchUpgradeConfig[],
+  config: RenovateConfig,
+): BranchUpgradeConfig[] {
+  const vulnerabilityGroupName = config.vulnerabilityAlerts?.groupName;
+  if (
+    !config.vulnerabilityAlerts?.expandPackageGroups ||
+    !vulnerabilityGroupName
+  ) {
+    return updates;
+  }
+
+  const securityUpdates = updates.filter(
+    (update) => update.isVulnerabilityAlert,
+  );
+  if (!securityUpdates.length) {
+    return updates;
+  }
+
+  const expandedKeys = new Set<string>();
+  const retargetBranchByKey = new Map<string, string>();
+  for (const securityUpdate of securityUpdates) {
+    const securityBranch = securityUpdate.branchName;
+    const sourceGroupName = securityUpdate.vulnerabilityPackageGroupName;
+    if (!sourceGroupName) {
+      continue;
+    }
+
+    for (const candidate of updates) {
+      if (candidate.groupName !== sourceGroupName) {
+        continue;
+      }
+      const key = getUpgradeStableKey(candidate);
+      expandedKeys.add(key);
+      retargetBranchByKey.set(key, securityBranch);
+    }
+  }
+
+  if (!expandedKeys.size) {
+    return updates;
+  }
+
+  const retargeted = updates.map((update) => {
+    const key = getUpgradeStableKey(update);
+    const securityBranch = retargetBranchByKey.get(key);
+    if (!securityBranch) {
+      return update;
+    }
+    return {
+      ...update,
+      branchName: securityBranch,
+      groupName: vulnerabilityGroupName,
+    };
+  });
+
+  const dedupedUpdates: BranchUpgradeConfig[] = [];
+  const dedupeKeys = new Set<string>();
+  for (const update of retargeted) {
+    const key = getUpgradeStableKey(update);
+    const dedupeKey = retargetBranchByKey.has(key)
+      ? key
+      : `${key}:${update.branchName}`;
+    if (dedupeKeys.has(dedupeKey)) {
+      continue;
+    }
+    dedupeKeys.add(dedupeKey);
+    dedupedUpdates.push(update);
+  }
+
+  return dedupedUpdates;
+}
+
 export async function branchifyUpgrades(
   config: RenovateConfig,
   packageFiles: Record<string, PackageFile[]>,
 ): Promise<BranchifiedConfig> {
   logger.debug('branchifyUpgrades');
-  const updates = await flattenUpdates(config, packageFiles);
+  let updates = await flattenUpdates(config, packageFiles);
+  updates = expandVulnerabilityPackageGroups(updates, config);
   logger.debug(
     `${updates.length} flattened updates found: ${updates
       .map((u) => u.depName)

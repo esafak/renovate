@@ -163,5 +163,157 @@ describe('workers/repository/updates/branchify', () => {
       expect(embedChangelogs).not.toHaveBeenCalled();
       expect(Object.keys(res.branches)).toHaveLength(2);
     });
+
+    it('expands security groups with package-group peers', async () => {
+      config.repoIsOnboarded = true;
+      config.vulnerabilityAlerts = {
+        ...config.vulnerabilityAlerts,
+        groupName: 'security',
+        expandPackageGroups: true,
+      };
+      flattenUpdates.mockResolvedValueOnce(
+        partial<BranchUpgradeConfig>([
+          {
+            depName: 'A',
+            branchName: 'renovate/security',
+            groupName: 'security',
+            vulnerabilityPackageGroupName: 'group-a',
+            isVulnerabilityAlert: true,
+            currentValue: '1.0.0',
+            newValue: '1.1.0',
+            updateType: 'minor',
+            packageFile: 'package.json',
+            prTitle: 'some-title',
+          },
+          {
+            depName: 'B',
+            branchName: 'renovate/security',
+            groupName: 'security',
+            vulnerabilityPackageGroupName: 'group-b',
+            isVulnerabilityAlert: true,
+            currentValue: '1.0.0',
+            newValue: '1.1.0',
+            updateType: 'minor',
+            packageFile: 'package.json',
+            prTitle: 'some-title',
+          },
+          {
+            depName: 'A1',
+            branchName: 'renovate/group-a',
+            groupName: 'group-a',
+            currentValue: '1.0.0',
+            newValue: '1.1.0',
+            updateType: 'minor',
+            packageFile: 'package.json',
+            prTitle: 'some-title',
+          },
+          {
+            depName: 'A2',
+            branchName: 'renovate/group-a',
+            groupName: 'group-a',
+            currentValue: '1.0.0',
+            newValue: '1.1.0',
+            updateType: 'minor',
+            packageFile: 'package.json',
+            prTitle: 'some-title',
+          },
+        ]),
+      );
+
+      const res = await branchifyUpgrades(config, {});
+      const securityBranch = res.branches.find(
+        (branch) => branch.branchName === 'renovate/security',
+      );
+      expect(
+        securityBranch?.upgrades.map((upgrade) => upgrade.depName),
+      ).toEqual(expect.arrayContaining(['A', 'B', 'A1', 'A2']));
+    });
+
+    it('does not expand security groups unless enabled', async () => {
+      config.repoIsOnboarded = true;
+      config.vulnerabilityAlerts = {
+        ...config.vulnerabilityAlerts,
+        groupName: 'security',
+        expandPackageGroups: false,
+      };
+      flattenUpdates.mockResolvedValueOnce(
+        partial<BranchUpgradeConfig>([
+          {
+            depName: 'A',
+            branchName: 'renovate/security',
+            groupName: 'security',
+            vulnerabilityPackageGroupName: 'group-a',
+            isVulnerabilityAlert: true,
+            currentValue: '1.0.0',
+            newValue: '1.1.0',
+            updateType: 'minor',
+            packageFile: 'package.json',
+            prTitle: 'some-title',
+          },
+          {
+            depName: 'A1',
+            branchName: 'renovate/group-a',
+            groupName: 'group-a',
+            currentValue: '1.0.0',
+            newValue: '1.1.0',
+            updateType: 'minor',
+            packageFile: 'package.json',
+            prTitle: 'some-title',
+          },
+        ]),
+      );
+
+      const res = await branchifyUpgrades(config, {});
+      const securityBranch = res.branches.find(
+        (branch) => branch.branchName === 'renovate/security',
+      );
+      expect(
+        securityBranch?.upgrades.map((upgrade) => upgrade.depName),
+      ).toEqual(['A']);
+    });
+
+    it('does not expand when vulnerability groupName is unset', async () => {
+      config.repoIsOnboarded = true;
+      config.vulnerabilityAlerts = {
+        ...config.vulnerabilityAlerts,
+        groupName: undefined,
+        expandPackageGroups: true,
+      };
+      flattenUpdates.mockResolvedValueOnce(
+        partial<BranchUpgradeConfig>([
+          {
+            depName: 'A',
+            branchName: 'renovate/a-vulnerability',
+            vulnerabilityPackageGroupName: 'group-a',
+            isVulnerabilityAlert: true,
+            currentValue: '1.0.0',
+            newValue: '1.1.0',
+            updateType: 'minor',
+            packageFile: 'package.json',
+            prTitle: 'some-title',
+          },
+          {
+            depName: 'A1',
+            branchName: 'renovate/group-a',
+            groupName: 'group-a',
+            currentValue: '1.0.0',
+            newValue: '1.1.0',
+            updateType: 'minor',
+            packageFile: 'package.json',
+            prTitle: 'some-title',
+          },
+        ]),
+      );
+
+      const res = await branchifyUpgrades(config, {});
+      expect(
+        res.branches.find((branch) => branch.branchName === 'renovate/group-a'),
+      ).toBeDefined();
+      expect(
+        res.branches.find(
+          (branch) => branch.branchName === 'renovate/a-vulnerability',
+        ),
+      ).toBeDefined();
+    });
   });
 });

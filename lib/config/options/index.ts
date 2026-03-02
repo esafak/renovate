@@ -2288,6 +2288,14 @@ const options: Readonly<RenovateOptions>[] = [
     parents: ['vulnerabilityAlerts'],
   },
   {
+    name: 'expandPackageGroups',
+    description:
+      'Expand vulnerability groups with package-group peers of vulnerable dependencies.',
+    type: 'boolean',
+    default: false,
+    parents: ['vulnerabilityAlerts'],
+  },
+  {
     name: 'osvVulnerabilityAlerts',
     description: 'Use vulnerability alerts from `osv.dev`.',
     type: 'boolean',

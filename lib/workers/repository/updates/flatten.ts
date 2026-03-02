@@ -13,6 +13,7 @@ import { applyPackageRules } from '../../../util/package-rules/index.ts';
 import { regEx } from '../../../util/regex.ts';
 import * as template from '../../../util/template/index.ts';
 import { parseUrl } from '../../../util/url.ts';
+import { sanitizeVulnerabilityAlertConfig } from '../../../util/vulnerability/utils.ts';
 import type { BranchUpgradeConfig } from '../../types.ts';
 import { generateBranchName } from './branch-name.ts';
 
@@ -205,7 +206,7 @@ export async function flattenUpdates(
               );
               updateConfig = mergeChildConfig(
                 updateConfig,
-                config.vulnerabilityAlerts,
+                sanitizeVulnerabilityAlertConfig(config.vulnerabilityAlerts),
               );
               delete updateConfig.vulnerabilityAlerts;
               updateConfig.isVulnerabilityAlert = true;

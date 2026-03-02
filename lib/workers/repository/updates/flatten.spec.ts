@@ -277,5 +277,36 @@ describe('workers/repository/updates/flatten', () => {
       expect(regularUpdate!.branchName).not.toContain('lock-file-maintenance');
       expect(lockFileUpdate!.branchName).not.toBe(regularUpdate!.branchName);
     });
+
+    it('keeps remediation groupName when vulnerabilityAlerts.groupName is null', async () => {
+      config.vulnerabilityAlerts = {
+        ...config.vulnerabilityAlerts,
+        groupName: null as never,
+      };
+      config.remediations = {
+        'package-lock.json': [
+          {
+            depName: 'foo',
+            currentVersion: '1.2.0',
+            newVersion: '1.3.0',
+            packageFile: 'package.json',
+            groupName: 'group-a',
+          },
+        ],
+      };
+      const packageFiles = {
+        npm: [
+          {
+            packageFile: 'package.json',
+            lockFiles: ['package-lock.json'],
+            deps: [],
+          },
+        ],
+      };
+
+      const res = await flattenUpdates(config, packageFiles);
+      const remediation = res.find((update) => update.isRemediation);
+      expect(remediation?.groupName).toBe('group-a');
+    });
   });
 });

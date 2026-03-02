@@ -172,6 +172,37 @@ describe('workers/repository/updates/generate', () => {
       expect(res.recreateClosed).toBe(false);
     });
 
+    it('uses vulnerability config as branch metadata source when present', () => {
+      const branch: BranchUpgradeConfig[] = [
+        {
+          ...requiredDefaultOptions,
+          manager: 'some-manager',
+          depName: 'some-dep',
+          branchName: 'renovate/security',
+          prTitle: 'some-title',
+          updateType: 'minor',
+          currentValue: '1.0.0',
+          newValue: '1.1.0',
+          commitMessageExtra: 'normal',
+        },
+        {
+          ...requiredDefaultOptions,
+          manager: 'some-manager',
+          depName: 'vulnerable-dep',
+          branchName: 'renovate/security',
+          prTitle: 'some-title',
+          updateType: 'minor',
+          currentValue: '1.0.0',
+          newValue: '1.1.0',
+          isVulnerabilityAlert: true,
+          commitMessageExtra: 'security',
+        },
+      ];
+
+      const res = generateBranchConfig(branch);
+      expect(res.commitMessage).toContain('security');
+    });
+
     it('groups multiple upgrades same version', () => {
       const branch: BranchUpgradeConfig[] = [
         {

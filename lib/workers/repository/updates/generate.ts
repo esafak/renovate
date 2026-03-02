@@ -378,9 +378,12 @@ export function generateBranchConfig(
     });
   }
   // Now assign first upgrade's config as branch config
+  const branchConfigSource =
+    config.upgrades.find((upgrade) => upgrade.isVulnerabilityAlert) ??
+    config.upgrades[0];
   config = {
     ...config,
-    ...config.upgrades[0],
+    ...branchConfigSource,
     releaseTimestamp: releaseTimestamp!,
   }; // TODO: fixme (#9666)
 

@@ -25,6 +25,7 @@ import { sanitizeMarkdown } from '../../../util/markdown.ts';
 import * as p from '../../../util/promises.ts';
 import { regEx } from '../../../util/regex.ts';
 import { titleCase } from '../../../util/string.ts';
+import { sanitizeVulnerabilityAlertConfig } from '../../../util/vulnerability/utils.ts';
 import type {
   DependencyVulnerabilities,
   SeverityDetails,
@@ -63,11 +64,10 @@ export class Vulnerabilities {
   }
 
   static async create(): Promise<Vulnerabilities> {
-    // intialize osv only once
+    // initialize osv only once
     const osvOffline = await Vulnerabilities.initialize();
 
-    const instance = new Vulnerabilities(osvOffline);
-    return instance;
+    return new Vulnerabilities(osvOffline);
   }
 
   async appendVulnerabilityPackageRules(
@@ -517,9 +517,9 @@ export class Vulnerabilities {
       isVulnerabilityAlert: true,
       vulnerabilitySeverity: severityDetails.severityLevel,
       prBodyNotes: this.generatePrBodyNotes(vulnerability, affected),
-      force: {
-        ...packageFileConfig.vulnerabilityAlerts,
-      },
+      force: sanitizeVulnerabilityAlertConfig(
+        packageFileConfig.vulnerabilityAlerts,
+      ),
     };
   }
 

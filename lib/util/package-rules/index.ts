@@ -1,4 +1,9 @@
-import { isNullOrUndefined, isString, isTruthy } from '@sindresorhus/is';
+import {
+  isNullOrUndefined,
+  isObject,
+  isString,
+  isTruthy,
+} from '@sindresorhus/is';
 import _slugify from 'slugify';
 import { mergeChildConfig } from '../../config/index.ts';
 import type {
@@ -52,6 +57,19 @@ export async function applyPackageRules<T extends PackageRuleInputConfig>(
         toApply.groupSlug = slugify(packageRule.groupName, {
           lower: true,
         });
+      }
+      if (
+        toApply.isVulnerabilityAlert &&
+        isString(config.groupName) &&
+        isObject(toApply.force)
+      ) {
+        const vulnerabilityForce = toApply.force as Record<string, unknown>;
+        if (
+          isString(vulnerabilityForce.groupName) &&
+          vulnerabilityForce.groupName !== config.groupName
+        ) {
+          toApply.vulnerabilityPackageGroupName = config.groupName;
+        }
       }
       if (toApply.enabled === false && config.enabled !== false) {
         config.skipReason = 'package-rules';
